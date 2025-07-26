@@ -1,0 +1,4 @@
+persistencia\ArchivoManager.class
+dto\MascotaDto.class
+persistencia\GestorPersistencia.class
+vista\formMascota.class
