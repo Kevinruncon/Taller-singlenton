@@ -1,4 +1,5 @@
 persistencia\ArchivoManager.class
+controlador\ControladorPersona.class
 dto\MascotaDto.class
 persistencia\GestorPersistencia.class
 vista\formMascota.class

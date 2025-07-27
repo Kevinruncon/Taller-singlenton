@@ -12,6 +12,8 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.List;
+import controlador.ControladorPersona;
+import persistencia.ArchivoManager;
 /**
  *
  * @author Kevin
@@ -21,6 +23,7 @@ public class formMascota extends JFrame {
     private JTextField txtNombre, txtEspecie, txtEdad;
     private JTable tablaMascotas;
     private DefaultTableModel modeloTabla;
+    private ControladorPersona controlador = new ControladorPersona();
     private MascotaDao dao = new MascotaDao();
     private int indiceSeleccionado = -1;
 
@@ -61,6 +64,13 @@ public class formMascota extends JFrame {
         JButton btnEliminar = new JButton("Eliminar");
         panelBotones.add(btnEliminar);
         add(panelBotones, BorderLayout.SOUTH);
+                //boton de mantenimiento
+
+        JButton btnMantenimiento = new JButton("Mantenimiento");
+        btnMantenimiento.addActionListener(e -> mostrarMenuMantenimiento());
+        panelBotones.add(btnMantenimiento);
+
+
 
         // Eventos
         btnGuardar.addActionListener(this::guardarMascota);
@@ -77,7 +87,7 @@ public class formMascota extends JFrame {
     private void guardarMascota(ActionEvent e) {
         try {
             MascotaDto mascota = obtenerDatosFormulario();
-            dao.guardar(mascota);
+            controlador.guardar(mascota);
             JOptionPane.showMessageDialog(this, "✅ Mascota guardada");
             limpiarCampos();
             listarMascotas();
@@ -92,7 +102,7 @@ public class formMascota extends JFrame {
                 throw new Exception("Seleccione una mascota de la tabla");
             }
             MascotaDto mascota = obtenerDatosFormulario();
-            dao.actualizar(indiceSeleccionado, mascota);
+            controlador.actualizar(indiceSeleccionado, mascota);
             JOptionPane.showMessageDialog(this, "✏️ Mascota actualizada");
             limpiarCampos();
             listarMascotas();
@@ -106,7 +116,7 @@ public class formMascota extends JFrame {
             if (indiceSeleccionado < 0) {
                 throw new Exception("Seleccione una mascota para eliminar");
             }
-            dao.eliminar(indiceSeleccionado);
+            controlador.eliminar(indiceSeleccionado);
             JOptionPane.showMessageDialog(this, "🗑️ Mascota eliminada");
             limpiarCampos();
             listarMascotas();
@@ -126,7 +136,7 @@ public class formMascota extends JFrame {
 
     private void listarMascotas() {
         modeloTabla.setRowCount(0);
-        List<MascotaDto> lista = dao.listar();
+        List<MascotaDto> lista = controlador.listar();
         for (MascotaDto m : lista) {
             modeloTabla.addRow(new Object[]{m.getNombre(), m.getEspecie(), m.getEdad()});
         }
@@ -163,10 +173,57 @@ public class formMascota extends JFrame {
         tablaMascotas.clearSelection();
         indiceSeleccionado = -1;
     }
+    private void mostrarMenuMantenimiento() {
+        ArchivoManager am = new ArchivoManager("data/mascotas.dat");
+
+        String[] opciones = {"Ver Información", "Limpiar Archivo", "Eliminar Archivo", "Cancelar"};
+        int opcion = JOptionPane.showOptionDialog(this,
+                "Selecciona una opción de mantenimiento del archivo:",
+                "Mantenimiento del archivo",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                opciones,
+                opciones[0]);
+
+        switch (opcion) {
+            case 0:  // Ver Información
+                String info = "Nombre: " + am.getNombreArchivo() +
+                        "\nRuta: " + am.getRutaAbsoluta() +
+                        "\nTamaño: " + am.obtenerTamanioArchivo() + " bytes";
+                JOptionPane.showMessageDialog(this, info, "Información del Archivo", JOptionPane.INFORMATION_MESSAGE);
+                break;
+            case 1:  // Limpiar Archivo
+                int confirmLimpiar = JOptionPane.showConfirmDialog(this, "¿Seguro que deseas limpiar el archivo?", "Confirmar", JOptionPane.YES_NO_OPTION);
+                if (confirmLimpiar == JOptionPane.YES_OPTION) {
+                    am.limpiarArchivo();
+                    JOptionPane.showMessageDialog(this, "Archivo limpiado correctamente.");
+                    listarMascotas();
+                }
+                break;
+            case 2:  // Eliminar Archivo
+                int confirmEliminar = JOptionPane.showConfirmDialog(this, "¿Seguro que deseas eliminar el archivo?", "Confirmar", JOptionPane.YES_NO_OPTION);
+                if (confirmEliminar == JOptionPane.YES_OPTION) {
+                    System.gc(); // 💡 Forzar recolección de basura para liberar posibles referencias de streams
+                    if (am.eliminarArchivo()) {
+                        JOptionPane.showMessageDialog(this, "Archivo eliminado.");
+                    } else {
+                        JOptionPane.showMessageDialog(this, "No se pudo eliminar el archivo.");
+                    }
+                }
+                listarMascotas(); // ✅ Actualiza tabla luego de eliminar
+                break;
+
+            default:
+                break;
+        }
+    }
+
 
     private void mostrarError(String mensaje) {
         JOptionPane.showMessageDialog(this, mensaje, "Error", JOptionPane.ERROR_MESSAGE);
     }
 }
+
 
 
